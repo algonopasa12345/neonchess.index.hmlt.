@@ -7,7 +7,7 @@ main{max-width:760px;margin:auto;padding:16px}.panel{background:#0b1224;border:1
 button,select{padding:10px 14px;margin:5px;border:1px solid #35eaff;border-radius:10px;background:#102348;color:white;font-weight:bold;cursor:pointer}
 button.on{background:#174077;box-shadow:0 0 14px #35eaff}
 #board{display:grid;grid-template-columns:repeat(8,minmax(0,1fr));grid-template-rows:repeat(8,minmax(0,1fr));width:min(92vw,640px);height:min(92vw,640px);aspect-ratio:1/1;margin:14px auto;border:3px solid #35eaff;box-shadow:0 0 24px #20c8ff;overflow:hidden;table-layout:fixed}
-.sq{width:100%;height:100%;min-width:0;min-height:0;display:flex;align-items:center;justify-content:center;overflow:hidden;font-size:clamp(24px,6.8vw,58px);line-height:1;cursor:pointer;user-select:none;position:relative}
+.sq{font-family:"DejaVu Sans","Segoe UI Symbol","Noto Sans Symbols 2",serif;width:100%;height:100%;min-width:0;min-height:0;display:flex;align-items:center;justify-content:center;overflow:hidden;font-size:clamp(24px,6.8vw,58px);line-height:1;cursor:pointer;user-select:none;position:relative}
 .light{background:#182642}.dark{background:#091326}.white{color:#efffff;text-shadow:0 0 10px #2adfff}.black{color:#ffeaff;text-shadow:0 0 10px #ff42e6}
 .selected{outline:4px solid #fff34f;outline-offset:-4px}.possible:after{content:"";width:20%;height:20%;border-radius:50%;background:#50ff91;box-shadow:0 0 12px #50ff91;position:absolute}.capture{box-shadow:inset 0 0 22px #ff4267}.checked{outline:5px solid #ff244d;outline-offset:-5px;background:#64132b!important}
 #status{font-size:18px;font-weight:bold;min-height:25px}.small{color:#9fb7d8;font-size:13px}
@@ -23,7 +23,7 @@ button.on{background:#174077;box-shadow:0 0 14px #35eaff}
 (()=>{
 "use strict";
 const $=id=>document.getElementById(id), boardEl=$("board");
-const glyph={wK:"♔",wQ:"♕",wR:"♖",wB:"♗",wN:"♘",wP:"♙",bK:"♚",bQ:"♛",bR:"♜",bB:"♝",bN:"♞",bP:"♟"};
+const glyph={wK:"♔",wQ:"♕",wR:"♖",wB:"♗",wN:"♘",wP:"♙",bK:"♔",bQ:"♕",bR:"♖",bB:"♗",bN:"♘",bP:"♙"};
 const val={P:100,N:320,B:335,R:500,Q:900,K:20000};
 let state,turn="w",mode="pvp",selected=null,options=[],busy=false,finished=false;
 
