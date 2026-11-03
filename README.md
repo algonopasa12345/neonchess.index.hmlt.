@@ -1,87 +1,145 @@
-<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Neon Chess Rules</title>
-<style>*{box-sizing:border-box}body{margin:0;background:#050814;color:#fff;font-family:Arial;text-align:center}main{max-width:760px;margin:auto;padding:16px}.panel{background:#0b1224;border:1px solid #20345b;border-radius:18px;padding:14px}button{padding:11px 16px;margin:5px;border:1px solid #35eaff;border-radius:10px;background:#102348;color:#fff;font-weight:bold;cursor:pointer}.on{background:#174077;box-shadow:0 0 14px #35eaff}#board{display:grid;grid-template-columns:repeat(8,1fr);width:min(92vw,640px);aspect-ratio:1;margin:14px auto;border:3px solid #35eaff;box-shadow:0 0 24px #20c8ff}.s{display:flex;align-items:center;justify-content:center;font-size:clamp(30px,7vw,60px);cursor:pointer;position:relative;user-select:none}.l{background:#182642}.d{background:#091326}.w{color:#efffff;text-shadow:0 0 10px #2adfff}.b{color:#ffeaff;text-shadow:0 0 10px #ff42e6}.sel{outline:4px solid #fff34f;outline-offset:-4px}.go:after{content:"";position:absolute;width:20%;height:20%;border-radius:50%;background:#50ff91;box-shadow:0 0 12px #50ff91}.cap{box-shadow:inset 0 0 24px #ff4267}.check{outline:5px solid #ff244d;outline-offset:-5px;background:#64132b!important}#status{font-size:19px;font-weight:bold;min-height:26px}.small{color:#9fb7d8;font-size:13px}</style></head>
-<body><main><h1>♔ NEON CHESS ♚</h1><div class="panel"><div><button id="pvp" class="on">👥 2 JUGADORES</button><button id="bot">🤖 CONTRA BOT</button></div>
-<div id="difficulty" style="display:none;margin:8px">
-Dificultad:
-<select id="diff" style="padding:9px;border-radius:9px;background:#102348;color:white;border:1px solid #35eaff">
-<option value="easy">Fácil</option><option value="normal" selected>Normal</option><option value="hard">Difícil</option>
-</select></div><div id="status"></div><div id="board"></div><button id="reset">↻ NUEVA PARTIDA</button><p class="small">Incluye jaque, jaque mate, ahogado, enroque, promoción elegible y en passant. En modo bot tú juegas con blancas.</p>
-<div id="promo" style="display:none;position:fixed;inset:0;background:#000b;z-index:9;align-items:center;justify-content:center">
-<div style="background:#0b1224;border:2px solid #35eaff;border-radius:18px;padding:22px;box-shadow:0 0 30px #20c8ff">
-<h2>Elige promoción</h2><div id="promoBtns"></div></div></div></div></main>
+<!doctype html>
+<html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Neon Chess Deluxe</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#050814;color:#f4f8ff;font-family:Arial,sans-serif;text-align:center}
+main{max-width:760px;margin:auto;padding:16px}.panel{background:#0b1224;border:1px solid #20345b;border-radius:18px;padding:14px}
+button,select{padding:10px 14px;margin:5px;border:1px solid #35eaff;border-radius:10px;background:#102348;color:white;font-weight:bold;cursor:pointer}
+button.on{background:#174077;box-shadow:0 0 14px #35eaff}
+#board{display:grid;grid-template-columns:repeat(8,minmax(0,1fr));grid-template-rows:repeat(8,minmax(0,1fr));width:min(92vw,640px);height:min(92vw,640px);aspect-ratio:1/1;margin:14px auto;border:3px solid #35eaff;box-shadow:0 0 24px #20c8ff;overflow:hidden;table-layout:fixed}
+.sq{width:100%;height:100%;min-width:0;min-height:0;display:flex;align-items:center;justify-content:center;overflow:hidden;font-size:clamp(24px,6.8vw,58px);line-height:1;cursor:pointer;user-select:none;position:relative}
+.light{background:#182642}.dark{background:#091326}.white{color:#efffff;text-shadow:0 0 10px #2adfff}.black{color:#ffeaff;text-shadow:0 0 10px #ff42e6}
+.selected{outline:4px solid #fff34f;outline-offset:-4px}.possible:after{content:"";width:20%;height:20%;border-radius:50%;background:#50ff91;box-shadow:0 0 12px #50ff91;position:absolute}.capture{box-shadow:inset 0 0 22px #ff4267}.checked{outline:5px solid #ff244d;outline-offset:-5px;background:#64132b!important}
+#status{font-size:18px;font-weight:bold;min-height:25px}.small{color:#9fb7d8;font-size:13px}
+#promotion{display:none;position:fixed;inset:0;background:#000c;z-index:5;align-items:center;justify-content:center}
+#promotion>div{background:#0b1224;border:2px solid #35eaff;border-radius:18px;padding:22px;box-shadow:0 0 30px #20c8ff}
+</style></head><body><main><h1>♔ NEON CHESS DELUXE ♚</h1><div class="panel">
+<div><button id="pvp" class="on">👥 2 JUGADORES</button><button id="bot">🤖 CONTRA BOT</button></div>
+<div id="difficulty" style="display:none">Dificultad: <select id="level"><option value="1">Fácil</option><option value="2" selected>Normal</option><option value="3">Difícil</option></select></div>
+<div id="status"></div><div id="board"></div><button id="reset">↻ NUEVA PARTIDA</button>
+<p class="small">Casillas de tamaño fijo · Jaque, jaque mate, tablas, enroque, en passant y promoción.</p></div></main>
+<div id="promotion"><div><h2>Elige la pieza</h2><div id="promotionChoices"></div></div></div>
 <script>
-(()=>{"use strict";
-const E=document.getElementById("board"),ST=document.getElementById("status"),IC={wK:"♔",wQ:"♕",wR:"♖",wB:"♗",wN:"♘",wP:"♙",bK:"♚",bQ:"♛",bR:"♜",bB:"♝",bN:"♞",bP:"♟"},VAL={P:100,N:320,B:330,R:500,Q:900,K:20000};
-let B,T,S,M,mode="pvp",over=false,thinking=false,rights,ep=null;
-const cp=b=>b.map(r=>r.slice()),inside=(r,c)=>r>=0&&r<8&&c>=0&&c<8,enemy=c=>c==="w"?"b":"w";
-function reset(){B=[["bR","bN","bB","bQ","bK","bB","bN","bR"],Array(8).fill("bP"),...Array(4).fill(0).map(()=>Array(8).fill(null)),Array(8).fill("wP"),["wR","wN","wB","wQ","wK","wB","wN","wR"]];T="w";S=null;M=[];over=false;thinking=false;rights={wK:true,wQ:true,bK:true,bQ:true};ep=null;draw()}
-function attacked(b,r,c,by){
- for(let i=0;i<8;i++)for(let j=0;j<8;j++){let p=b[i][j];if(!p||p[0]!==by)continue;let ty=p[1];
-  if(ty==="P"){let d=by==="w"?-1:1;if(i+d===r&&(j-1===c||j+1===c))return true}
-  if(ty==="N"&&[[2,1],[2,-1],[-2,1],[-2,-1],[1,2],[1,-2],[-1,2],[-1,-2]].some(q=>i+q[0]===r&&j+q[1]===c))return true;
-  if(ty==="K"&&Math.max(Math.abs(i-r),Math.abs(j-c))===1)return true;
-  let dirs=[];if(ty==="R"||ty==="Q")dirs.push([1,0],[-1,0],[0,1],[0,-1]);if(ty==="B"||ty==="Q")dirs.push([1,1],[1,-1],[-1,1],[-1,-1]);
-  for(let [a,d] of dirs){let x=i+a,y=j+d;while(inside(x,y)){if(x===r&&y===c)return true;if(b[x][y])break;x+=a;y+=d}}
- }return false}
-function kingPos(b,c){for(let r=0;r<8;r++)for(let k=0;k<8;k++)if(b[r][k]===c+"K")return[r,k];return null}
-function inCheck(b,c){let k=kingPos(b,c);return k?attacked(b,k[0],k[1],enemy(c)):true}
-function pseudo(r,c,b=B,castle=true){let p=b[r][c];if(!p)return[];let co=p[0],ty=p[1],en=enemy(co),o=[];
- const add=(a,d)=>{if(inside(a,d)&&(!b[a][d]||b[a][d][0]===en))o.push({r:a,c:d})};
- const ray=ds=>ds.forEach(([dr,dc])=>{let a=r+dr,d=c+dc;while(inside(a,d)){if(!b[a][d])o.push({r:a,c:d});else{if(b[a][d][0]===en)o.push({r:a,c:d});break}a+=dr;d+=dc}});
- if(ty==="P"){let d=co==="w"?-1:1,z=co==="w"?6:1;if(inside(r+d,c)&&!b[r+d][c]){o.push({r:r+d,c});if(r===z&&!b[r+2*d][c])o.push({r:r+2*d,c,double:true})}[-1,1].forEach(x=>{let a=r+d,k=c+x;if(inside(a,k)&&b[a][k]&&b[a][k][0]===en)o.push({r:a,c:k});if(b===B&&ep&&ep.r===a&&ep.c===k)o.push({r:a,c:k,ep:true})})}
- if(ty==="N")[[2,1],[2,-1],[-2,1],[-2,-1],[1,2],[1,-2],[-1,2],[-1,-2]].forEach(q=>add(r+q[0],c+q[1]));
- if(ty==="K"){for(let a=-1;a<=1;a++)for(let d=-1;d<=1;d++)if(a||d)add(r+a,c+d);
-  if(castle&&b===B&&!inCheck(B,co)){let row=co==="w"?7:0;if(r===row&&c===4){if(rights[co+"K"]&&!B[row][5]&&!B[row][6]&&B[row][7]===co+"R"&&!attacked(B,row,5,en)&&!attacked(B,row,6,en))o.push({r:row,c:6,castle:"K"});if(rights[co+"Q"]&&!B[row][1]&&!B[row][2]&&!B[row][3]&&B[row][0]===co+"R"&&!attacked(B,row,3,en)&&!attacked(B,row,2,en))o.push({r:row,c:2,castle:"Q"})}}}
- if(ty==="R"||ty==="Q")ray([[1,0],[-1,0],[0,1],[0,-1]]);if(ty==="B"||ty==="Q")ray([[1,1],[1,-1],[-1,1],[-1,-1]]);return o}
-function simulate(r,c,m){let b=cp(B),p=b[r][c];b[m.r][m.c]=p;b[r][c]=null;if(m.ep)b[r][m.c]=null;if(m.castle){let row=r;if(m.castle==="K"){b[row][5]=b[row][7];b[row][7]=null}else{b[row][3]=b[row][0];b[row][0]=null}}if(p[1]==="P"&&(m.r===0||m.r===7))b[m.r][m.c]=p[0]+"Q";return b}
-function legal(r,c){let p=B[r][c];return p?pseudo(r,c).filter(m=>!inCheck(simulate(r,c,m),p[0])):[]}
-function all(c){let a=[];for(let r=0;r<8;r++)for(let k=0;k<8;k++)if(B[r][k]&&B[r][k][0]===c)legal(r,k).forEach(m=>a.push({fr:r,fc:k,...m}));return a}
-function move(fr,fc,m){let p=B[fr][fc],capt=B[m.r][m.c];if(p[1]==="K"){rights[p[0]+"K"]=rights[p[0]+"Q"]=false}if(p[1]==="R"){if(fr===(p[0]==="w"?7:0)&&fc===0)rights[p[0]+"Q"]=false;if(fr===(p[0]==="w"?7:0)&&fc===7)rights[p[0]+"K"]=false}if(capt&&capt[1]==="R"){let co=capt[0],row=co==="w"?7:0;if(m.r===row&&m.c===0)rights[co+"Q"]=false;if(m.r===row&&m.c===7)rights[co+"K"]=false}
- B[m.r][m.c]=p;B[fr][fc]=null;if(m.ep)B[fr][m.c]=null;if(m.castle){if(m.castle==="K"){B[fr][5]=B[fr][7];B[fr][7]=null}else{B[fr][3]=B[fr][0];B[fr][0]=null}}ep=m.double?{r:(fr+m.r)/2,c:fc}:null;if(p[1]==="P"&&(m.r===0||m.r===7)){S=null;M=[];choosePromotion(p[0],m.r,m.c);return}
-T=enemy(T);S=null;M=[];state();draw()}
-function choosePromotion(co,r,c){
- let modal=document.getElementById("promo"),box=document.getElementById("promoBtns");modal.style.display="flex";box.innerHTML="";
- [["Q","Dama"],["R","Torre"],["B","Alfil"],["N","Caballo"]].forEach(([x,n])=>{
-  let b=document.createElement("button");b.textContent=IC[co+x]+" "+n;b.onclick=()=>{
-   B[r][c]=co+x;modal.style.display="none";T=enemy(T);state();draw();
-   if(mode==="bot"&&!over&&T==="b")bot();
-  };box.appendChild(b)
- });
+(()=>{
+"use strict";
+const $=id=>document.getElementById(id), boardEl=$("board");
+const glyph={wK:"♔",wQ:"♕",wR:"♖",wB:"♗",wN:"♘",wP:"♙",bK:"♚",bQ:"♛",bR:"♜",bB:"♝",bN:"♞",bP:"♟"};
+const val={P:100,N:320,B:335,R:500,Q:900,K:20000};
+let state,turn="w",mode="pvp",selected=null,options=[],busy=false,finished=false;
+
+function initial(){
+ let b=[["bR","bN","bB","bQ","bK","bB","bN","bR"],Array(8).fill("bP"),...Array(4).fill(0).map(()=>Array(8).fill(null)),Array(8).fill("wP"),["wR","wN","wB","wQ","wK","wB","wN","wR"]];
+ return {b,turn:"w",castle:{wK:true,wQ:true,bK:true,bQ:true},ep:null};
 }
-function state(){let a=all(T);if(!a.length){over=true;ST.textContent=inCheck(B,T)?"🏆 JAQUE MATE · Ganan "+(enemy(T)==="w"?"BLANCAS":"NEGRAS"):"🤝 TABLAS · Ahogado";return}ST.textContent=(inCheck(B,T)?"⚠️ JAQUE · ":"Turno: ")+(T==="w"?"⚡ BLANCAS":"🌸 NEGRAS")+(mode==="bot"&&T==="b"?" · BOT":"")}
-function click(r,c){if(over||thinking||(mode==="bot"&&T==="b"))return;let p=B[r][c];if(S){let m=M.find(x=>x.r===r&&x.c===c);if(m){move(S[0],S[1],m);if(mode==="bot"&&!over&&T==="b")bot();return}}if(p&&p[0]===T){S=[r,c];M=legal(r,c)}else{S=null;M=[]}draw()}
-function evalBoard(b){
- let s=0;for(let r=0;r<8;r++)for(let c=0;c<8;c++){let p=b[r][c];if(p)s+=(p[0]==="b"?1:-1)*VAL[p[1]]}
- return s
+const clone=s=>({b:s.b.map(r=>r.slice()),turn:s.turn,castle:{...s.castle},ep:s.ep?{...s.ep}:null});
+const inside=(r,c)=>r>=0&&r<8&&c>=0&&c<8, enemy=c=>c==="w"?"b":"w";
+function king(s,color){for(let r=0;r<8;r++)for(let c=0;c<8;c++)if(s.b[r][c]===color+"K")return [r,c];return null}
+function isAttacked(s,r,c,by){
+ const b=s.b;
+ for(let y=0;y<8;y++)for(let x=0;x<8;x++){
+  const p=b[y][x];if(!p||p[0]!==by)continue;const t=p[1],dr=r-y,dc=c-x;
+  if(t==="P"&&dr===(by==="w"?-1:1)&&Math.abs(dc)===1)return true;
+  if(t==="N"&&((Math.abs(dr)===2&&Math.abs(dc)===1)||(Math.abs(dr)===1&&Math.abs(dc)===2)))return true;
+  if(t==="K"&&Math.max(Math.abs(dr),Math.abs(dc))===1)return true;
+  let line=(t==="Q"&&(dr===0||dc===0||Math.abs(dr)===Math.abs(dc)))||(t==="R"&&(dr===0||dc===0))||(t==="B"&&Math.abs(dr)===Math.abs(dc));
+  if(line&&!(dr===0&&dc===0)){let sr=Math.sign(dr),sc=Math.sign(dc),a=y+sr,d=x+sc,clear=true;while(a!==r||d!==c){if(b[a][d]){clear=false;break}a+=sr;d+=sc}if(clear)return true}
+ }return false;
 }
-function bot(){
- thinking=true;ST.textContent="🤖 El bot está pensando...";
- setTimeout(()=>{
-  let a=all("b");if(!a.length){thinking=false;state();draw();return}
-  let dif=document.getElementById("diff").value;
-  if(dif==="easy"){
-   let captures=a.filter(m=>B[m.r][m.c]);let pool=Math.random()<.35&&captures.length?captures:a;
-   let pick=pool[Math.floor(Math.random()*pool.length)];thinking=false;move(pick.fr,pick.fc,pick);return
+function check(s,color){let k=king(s,color);return !k||isAttacked(s,k[0],k[1],enemy(color))}
+function pseudo(s,r,c){
+ const b=s.b,p=b[r][c];if(!p)return[];let co=p[0],t=p[1],en=enemy(co),out=[];
+ const add=(a,d,extra={})=>{if(inside(a,d)&&(!b[a][d]||b[a][d][0]===en))out.push({r:a,c:d,...extra})};
+ const ray=dirs=>dirs.forEach(([dr,dc])=>{let a=r+dr,d=c+dc;while(inside(a,d)){if(!b[a][d])out.push({r:a,c:d});else{if(b[a][d][0]===en)out.push({r:a,c:d});break}a+=dr;d+=dc}});
+ if(t==="P"){
+  let d=co==="w"?-1:1,start=co==="w"?6:1;
+  if(inside(r+d,c)&&!b[r+d][c]){out.push({r:r+d,c});if(r===start&&!b[r+2*d][c])out.push({r:r+2*d,c,double:true})}
+  for(let dc of [-1,1]){let a=r+d,x=c+dc;if(inside(a,x)&&b[a][x]&&b[a][x][0]===en)out.push({r:a,c:x});if(s.ep&&s.ep.r===a&&s.ep.c===x)out.push({r:a,c:x,ep:true})}
+ }
+ if(t==="N")for(let [a,d] of [[2,1],[2,-1],[-2,1],[-2,-1],[1,2],[1,-2],[-1,2],[-1,-2]])add(r+a,c+d);
+ if(t==="K"){
+  for(let a=-1;a<=1;a++)for(let d=-1;d<=1;d++)if(a||d)add(r+a,c+d);
+  let row=co==="w"?7:0;
+  if(r===row&&c===4&&!check(s,co)){
+   if(s.castle[co+"K"]&&!b[row][5]&&!b[row][6]&&b[row][7]===co+"R"&&!isAttacked(s,row,5,en)&&!isAttacked(s,row,6,en))out.push({r:row,c:6,castle:"K"});
+   if(s.castle[co+"Q"]&&!b[row][1]&&!b[row][2]&&!b[row][3]&&b[row][0]===co+"R"&&!isAttacked(s,row,3,en)&&!isAttacked(s,row,2,en))out.push({r:row,c:2,castle:"Q"});
   }
-  a.forEach(m=>{
-   let target=B[m.r][m.c],score=(target?VAL[target[1]]:0)+(3.5-Math.abs(3.5-m.r))*5+(3.5-Math.abs(3.5-m.c))*5;
-   let after=simulate(m.fr,m.fc,m);
-   if(inCheck(after,"w"))score+=35;
-   if(dif==="hard"){
-    let saveB=B;B=after;
-    let replies=all("w"),worst=0;
-    replies.forEach(q=>{let t=B[q.r][q.c];let v=t?VAL[t[1]]:0;if(v>worst)worst=v});
-    B=saveB;score-=worst*.8;score+=evalBoard(after)*.06;
-   } else score+=Math.random()*55;
-   m.v=score;
-  });
-  a.sort((x,y)=>y.v-x.v);
-  let pick=dif==="hard"?a[0]:a[Math.floor(Math.random()*Math.min(2,a.length))];
-  thinking=false;move(pick.fr,pick.fc,pick)
- },difDelay())
+ }
+ if(t==="R"||t==="Q")ray([[1,0],[-1,0],[0,1],[0,-1]]);
+ if(t==="B"||t==="Q")ray([[1,1],[1,-1],[-1,1],[-1,-1]]);
+ return out;
 }
-function difDelay(){let d=document.getElementById("diff").value;return d==="hard"?650:d==="normal"?400:250}
-function draw(){E.innerHTML="";let kp=inCheck(B,T)?kingPos(B,T):null;for(let r=0;r<8;r++)for(let c=0;c<8;c++){let e=document.createElement("div"),p=B[r][c];e.className="s "+((r+c)%2?"d":"l")+(p?(p[0]==="w"?" w":" b"):"");if(S&&S[0]===r&&S[1]===c)e.classList.add("sel");if(M.some(x=>x.r===r&&x.c===c))e.classList.add(p?"cap":"go");if(kp&&kp[0]===r&&kp[1]===c)e.classList.add("check");e.textContent=p?IC[p]:"";e.onclick=()=>click(r,c);E.appendChild(e)}if(!over&&!thinking)state()}
-function setMode(m){mode=m;document.getElementById("pvp").classList.toggle("on",m==="pvp");document.getElementById("bot").classList.toggle("on",m==="bot");document.getElementById("difficulty").style.display=m==="bot"?"block":"none";reset()}
-document.getElementById("pvp").onclick=()=>setMode("pvp");document.getElementById("bot").onclick=()=>setMode("bot");document.getElementById("reset").onclick=reset;reset();
-})();</script></body></html>
+function apply(s,fromR,fromC,m,promotion="Q"){
+ let n=clone(s),b=n.b,p=b[fromR][fromC],capt=b[m.r][m.c];
+ if(p[1]==="K"){n.castle[p[0]+"K"]=false;n.castle[p[0]+"Q"]=false}
+ if(p[1]==="R"){let row=p[0]==="w"?7:0;if(fromR===row&&fromC===0)n.castle[p[0]+"Q"]=false;if(fromR===row&&fromC===7)n.castle[p[0]+"K"]=false}
+ if(capt&&capt[1]==="R"){let row=capt[0]==="w"?7:0;if(m.r===row&&m.c===0)n.castle[capt[0]+"Q"]=false;if(m.r===row&&m.c===7)n.castle[capt[0]+"K"]=false}
+ b[m.r][m.c]=p;b[fromR][fromC]=null;
+ if(m.ep)b[fromR][m.c]=null;
+ if(m.castle){let row=fromR;if(m.castle==="K"){b[row][5]=b[row][7];b[row][7]=null}else{b[row][3]=b[row][0];b[row][0]=null}}
+ n.ep=m.double?{r:(fromR+m.r)/2,c:fromC}:null;
+ if(p[1]==="P"&&(m.r===0||m.r===7))b[m.r][m.c]=p[0]+promotion;
+ n.turn=enemy(s.turn);return n;
+}
+function legal(s,r,c){let p=s.b[r][c];if(!p)return[];return pseudo(s,r,c).filter(m=>!check(apply(s,r,c,m),p[0]))}
+function allMoves(s){let a=[];for(let r=0;r<8;r++)for(let c=0;c<8;c++)if(s.b[r][c]&&s.b[r][c][0]===s.turn)for(let m of legal(s,r,c))a.push({fr:r,fc:c,...m});return a}
+function terminal(s){let a=allMoves(s);if(a.length)return null;return check(s,s.turn)?"mate":"stalemate"}
+function evaluate(s){
+ let score=0;
+ for(let r=0;r<8;r++)for(let c=0;c<8;c++){let p=s.b[r][c];if(!p)continue;let sign=p[0]==="b"?1:-1,t=p[1],center=7-(Math.abs(3.5-r)+Math.abs(3.5-c));
+ score+=sign*(val[t]+(t==="P"?(6-(p[0]==="w"?r:7-r))*7:0)+(t==="N"||t==="B"?center*5:0));
+ }
+ return score;
+}
+function ordered(s,moves){
+ return moves.map(m=>{let captured=s.b[m.r][m.c];let score=captured?val[captured[1]]*10:0;if(m.ep)score+=1000;if(m.castle)score+=35;if(s.b[m.fr][m.fc][1]==="P"&&(m.r===0||m.r===7))score+=8000;return {...m,order:score+Math.random()*.1}}).sort((a,b)=>b.order-a.order);
+}
+function minimax(s,depth,alpha,beta){
+ let end=terminal(s);if(end==="mate")return s.turn==="b"?-100000-depth:100000+depth;if(end==="stalemate")return 0;if(depth===0)return evaluate(s);
+ let moves=ordered(s,allMoves(s));
+ if(s.turn==="b"){let best=-Infinity;for(let m of moves){let v=minimax(apply(s,m.fr,m.fc,m),depth-1,alpha,beta);best=Math.max(best,v);alpha=Math.max(alpha,best);if(beta<=alpha)break}return best}
+ else{let best=Infinity;for(let m of moves){let v=minimax(apply(s,m.fr,m.fc,m),depth-1,alpha,beta);best=Math.min(best,v);beta=Math.min(beta,best);if(beta<=alpha)break}return best}
+}
+function botMove(){
+ busy=true;$("status").textContent="🤖 El bot está calculando...";
+ setTimeout(()=>{
+  let moves=ordered(state,allMoves(state)),depth=Number($("level").value),best=-Infinity,chosen=moves[0];
+  for(let m of moves){let v=minimax(apply(state,m.fr,m.fc,m),depth*2-1,-Infinity,Infinity);if(v>best){best=v;chosen=m}}
+  busy=false;play(chosen.fr,chosen.fc,chosen); 
+ },60);
+}
+function play(r,c,m,promo="Q"){
+ state=apply(state,r,c,m,promo);turn=state.turn;selected=null;options=[];render();
+ if(!finished&&mode==="bot"&&turn==="b")botMove();
+}
+function selectSquare(r,c){
+ if(finished||busy||(mode==="bot"&&turn==="b"))return;
+ if(selected){let m=options.find(x=>x.r===r&&x.c===c);if(m){
+  let p=state.b[selected[0]][selected[1]];
+  if(p[1]==="P"&&(r===0||r===7)){promotion(selected[0],selected[1],m);return}
+  play(selected[0],selected[1],m);return;
+ }}
+ let p=state.b[r][c];if(p&&p[0]===turn){selected=[r,c];options=legal(state,r,c)}else{selected=null;options=[]}render();
+}
+function promotion(fr,fc,m){
+ let modal=$("promotion"),choices=$("promotionChoices");choices.innerHTML="";modal.style.display="flex";
+ for(let [piece,name] of [["Q","Dama"],["R","Torre"],["B","Alfil"],["N","Caballo"]]){let b=document.createElement("button");b.textContent=glyph[turn+piece]+" "+name;b.onclick=()=>{modal.style.display="none";play(fr,fc,m,piece)};choices.appendChild(b)}
+}
+function render(){
+ boardEl.innerHTML="";
+ let k=check(state,state.turn)?king(state,state.turn):null;
+ for(let r=0;r<8;r++)for(let c=0;c<8;c++){
+  let e=document.createElement("div"),p=state.b[r][c];e.className="sq "+((r+c)%2?"dark":"light");
+  if(p)e.classList.add(p[0]==="w"?"white":"black");if(selected&&selected[0]===r&&selected[1]===c)e.classList.add("selected");
+  if(options.some(m=>m.r===r&&m.c===c))e.classList.add(p?"capture":"possible");if(k&&k[0]===r&&k[1]===c)e.classList.add("checked");
+  e.textContent=p?glyph[p]:"";e.addEventListener("click",()=>selectSquare(r,c));boardEl.appendChild(e);
+ }
+ let end=terminal(state);
+ if(end==="mate"){finished=true;$("status").textContent="🏆 JAQUE MATE · Ganan "+(enemy(turn)==="w"?"BLANCAS":"NEGRAS")}
+ else if(end==="stalemate"){finished=true;$("status").textContent="🤝 TABLAS · Rey ahogado"}
+ else $("status").textContent=(check(state,turn)?"⚠️ JAQUE · ":"Turno: ")+(turn==="w"?"⚡ BLANCAS":"🌸 NEGRAS")+(mode==="bot"&&turn==="b"?" · BOT":"");
+}
+function reset(){state=initial();turn="w";selected=null;options=[];busy=false;finished=false;render()}
+function setMode(m){mode=m;$("pvp").classList.toggle("on",m==="pvp");$("bot").classList.toggle("on",m==="bot");$("difficulty").style.display=m==="bot"?"block":"none";reset()}
+$("pvp").onclick=()=>setMode("pvp");$("bot").onclick=()=>setMode("bot");$("reset").onclick=reset;reset();
+})();
+</script></body></html>
